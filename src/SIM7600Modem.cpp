@@ -869,11 +869,14 @@ Status Modem::getNetworkTime(NTPTimeData& time_data) {
     return Status::InvalidResponse;
   }
 
+  // Temporary 2 digit year
+  uint8_t year;
+
   // Parse time
   status = parseLine(time_buffer,
     7,
     "%2hhu/%2hhu/%2hhu,%2hhu:%2hhu:%2hhu%2hhd",
-    &time_data.year,       // yy (last 2 digits)
+    &year,                 // yy (last 2 digits)
     &time_data.month,      // MM
     &time_data.day,        // dd
     &time_data.hour,       // hh
@@ -881,8 +884,10 @@ Status Modem::getNetworkTime(NTPTimeData& time_data) {
     &time_data.second,     // ss
     &time_data.time_zone); // ±zz (quarters)
 
-  time_data.year += 2000;   // Convert to full year
-  time_data.time_zone /= 4; // Convert to hours
+  if (status != Status::Success) return status;
+
+  time_data.year = 2000 + year; // Convert to full year
+  time_data.time_zone /= 4;     // Convert to hours
 
   return waitForResponse(AT_OK);
 }
