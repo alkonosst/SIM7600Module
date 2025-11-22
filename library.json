@@ -1,0 +1,18 @@
+{
+  "name": "SIM7600Module",
+  "version": "1.0.0",
+  "authors": {
+    "name": "Maximiliano Ramirez",
+    "email": "maximiliano.ramirezbravo@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alkonosst/SIM7600Module.git"
+  },
+  "description": "Add 4G LTE connectivity to your microcontroller projects with the SIM7600 module. With straightforward functions and clear examples, you will be sending data to MQTT brokers, making HTTP requests, and managing GPS in no time. No need to struggle with complex AT commands!",
+  "keywords": "arduino, sim, simcom, sim7600, gsm, gprs, lte, gps, gnss, mqtt, http, ftp, tcp, udp, iot, cellular, modem, 4g, comm, communication, cloud, data, client",
+  "license": "MIT",
+  "frameworks": "arduino",
+  "platforms": "*",
+  "headers": ["SIM7600Modem.h", "SIM7600TCPClient.h", "SIM7600MQTTClient.h"]
+}
