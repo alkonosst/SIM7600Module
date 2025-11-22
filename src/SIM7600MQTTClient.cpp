@@ -172,12 +172,12 @@ Status MQTTClient::setLastWillMessage(const char* topic, const char* message, co
 
   SIM7600_LOGD(tag, "MQTTClient %u: Setting Will message", _client_id);
 
-  Status status =
+  status =
     _modem->sendATCmd("AT+CMQTTWILLMSG=%u,%u,%u", _client_id, msg_len, static_cast<uint8_t>(qos));
   if (status != Status::Success) return status;
 
   // Send data after '>' prompt
-  size_t bytes_sent = 0;
+  bytes_sent = 0;
   status =
     _modem->_waitPromptAndSendData(reinterpret_cast<const uint8_t*>(message), msg_len, bytes_sent);
   if (status != Status::Success) return status;
