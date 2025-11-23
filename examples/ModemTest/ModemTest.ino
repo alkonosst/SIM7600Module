@@ -243,14 +243,21 @@ void handleSerial() {
 
     case '5':
     {
-      SIM7600::NTPSyncStatus ntp_status;
-      status = modem.setNTPServer(ntp_status, "pool.ntp.org", 0);
+      status = modem.setNTPServer("pool.ntp.org", 0);
 
       if (status == SIM7600::Status::Success) {
-        Serial.printf("NTP server set: %u\r\n", static_cast<uint8_t>(ntp_status));
+        Serial.printf("NTP server set successfully\r\n");
       } else {
-        Serial.printf("NTP server setup or time synchronization failed: %s\r\n",
-          SIM7600::statusToString(status));
+        Serial.printf("NTP server setup failed: %s\r\n", SIM7600::statusToString(status));
+      }
+
+      SIM7600::NTPSyncStatus ntp_status;
+      status = modem.synchronizeTime(ntp_status);
+      if (status == SIM7600::Status::Success) {
+        Serial.printf("Time synchronized successfully, NTP Status: %u\r\n",
+          static_cast<uint8_t>(ntp_status));
+      } else {
+        Serial.printf("Time synchronization failed: %s\r\n", SIM7600::statusToString(status));
       }
     } break;
 
@@ -261,10 +268,10 @@ void handleSerial() {
       status = modem.getNetworkTime(time_data);
 
       if (status == SIM7600::Status::Success) {
-        Serial.printf("Network time: %02u-%02u-%04u %02u:%02u:%02u TZ: %d\r\n",
-          time_data.day,
-          time_data.month,
+        Serial.printf("Network time: %04u-%02u-%02u %02u:%02u:%02u TZ: %d\r\n",
           time_data.year,
+          time_data.month,
+          time_data.day,
           time_data.hour,
           time_data.minute,
           time_data.second,

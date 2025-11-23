@@ -842,21 +842,14 @@ Status Modem::configureAPN(const char* apn, const char* user, const char* passwo
   return Status::Success;
 }
 
-Status Modem::setNTPServer(NTPSyncStatus& ntp_status, const char* ntp_server,
-  const int8_t time_zone, const uint32_t timeout_ms) {
+Status Modem::setNTPServer(const char* ntp_server, const int8_t time_zone) {
   SIM7600_LOGD(tag, "Setting NTP server: %s, time zone: %d", ntp_server, time_zone);
-
-  ntp_status = NTPSyncStatus::UnknownError;
 
   // Configure NTP server
   Status status = sendATCmd("AT+CNTP=\"%s\",%d", ntp_server, time_zone);
   if (status != Status::Success) return status;
 
-  status = waitForResponse(AT_OK, 10000);
-  if (status != Status::Success) return status;
-
-  // Sync time
-  return synchronizeTime(ntp_status, timeout_ms);
+  return waitForResponse(AT_OK);
 }
 
 Status Modem::synchronizeTime(NTPSyncStatus& ntp_status, const uint32_t timeout_ms) {

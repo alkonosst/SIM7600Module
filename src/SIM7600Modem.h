@@ -444,18 +444,16 @@ class Modem {
   /* ---------------------------------------- NTP methods --------------------------------------- */
 
   /**
-   * @brief Set the NTP server and synchronize time.
-   * @param ntp_status Reference to store the NTPSyncStatus enum value.
+   * @brief Set the NTP server to synchronize time.
    * @param ntp_server NTP server address.
    * @param time_zone Time zone offset from UTC in hours.
-   * @param timeout_ms Timeout in milliseconds to wait for synchronization.
    * @return Status::Success on success, error code otherwise.
    */
-  Status setNTPServer(NTPSyncStatus& ntp_status, const char* ntp_server, const int8_t time_zone = 0,
-    const uint32_t timeout_ms = SIM7600_MODEM_NTP_SYNC_TIMEOUT_MS);
+  Status setNTPServer(const char* ntp_server, const int8_t time_zone = 0);
 
   /**
-   * @brief Synchronize time with the configured NTP server.
+   * @brief Synchronize time with the configured NTP server. You must set the NTP server. At least
+   * one successful synchronization is required to get the network time.
    * @param ntp_status Reference to store the NTPSyncStatus enum value.
    * @param timeout_ms Timeout in milliseconds to wait for synchronization.
    * @return Status::Success on success, error code otherwise.
