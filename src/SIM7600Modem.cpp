@@ -1107,29 +1107,49 @@ Status Modem::_waitPromptAndSendData(const uint8_t* data, const size_t data_leng
 
 Status Modem::_waitAsyncMQTTResponse(const char* mqtt_response_prefix, uint8_t& err_code) {
   // If success, modem responds with OK and +CMQTT... but order is not guaranteed
-  const char* expected_responses[] = {mqtt_response_prefix, AT_OK};
+  // If error, modem responds with ERROR and +CMQTT... but order is not guaranteed. We need to
+  // extract the error code from +CMQTT... response.
+  const char* expected_responses[] = {mqtt_response_prefix, AT_OK, AT_ERROR};
 
   uint8_t found_index = 0;
   Status status =
-    waitForResponses(expected_responses, 2, found_index, SIM7600_MQTT_MAX_RESPONSE_TIME_MS);
+    waitForResponses(expected_responses, 3, found_index, SIM7600_MQTT_MAX_RESPONSE_TIME_MS);
   if (status != Status::Success) return status;
 
   char format_buf[32];
   snprintf(format_buf, sizeof(format_buf), "%s%%hhu", mqtt_response_prefix);
 
-  bool got_mqtt_first = (found_index == 0);
+  bool got_mqtt_first  = (found_index == 0);
+  bool got_ok_first    = (found_index == 1);
+  bool got_error_first = (found_index == 2);
 
   // Expected <mqtt_response_prefix>,<err> / where err: 0=success, others=failure
   if (got_mqtt_first) {
+    // Parse the error code
     status = parseLine(_rx_buf, 1, format_buf, &err_code);
     if (status != Status::Success) return status;
 
-    // Need to wait for OK, but could receive ERROR
-    status = waitForResponse(AT_OK);
+    // Need to wait for OK or ERROR now
+    const char* ok_or_error[] = {AT_OK, AT_ERROR};
+    uint8_t ok_error_index    = 0;
+
+    status = waitForResponses(ok_or_error, 2, ok_error_index);
     if (status != Status::Success) return status;
 
-  } else {
+    // If we got ERROR but err_code indicates a recoverable state (e.g. 23=already started,
+    // 9=already stopped) we should not treat it as an error
+    // The calling function will check err_code and decide how to handle it
+
+  } else if (got_ok_first) {
     // Got OK, now wait for mqtt_response_prefix
+    status = waitForResponse(mqtt_response_prefix, SIM7600_MQTT_MAX_RESPONSE_TIME_MS);
+    if (status != Status::Success) return status;
+
+    status = parseLine(_rx_buf, 1, format_buf, &err_code);
+    if (status != Status::Success) return status;
+
+  } else if (got_error_first) {
+    // Got ERROR, now wait for mqtt_response_prefix
     status = waitForResponse(mqtt_response_prefix, SIM7600_MQTT_MAX_RESPONSE_TIME_MS);
     if (status != Status::Success) return status;
 
