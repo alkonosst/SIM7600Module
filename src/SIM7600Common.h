@@ -117,6 +117,7 @@ namespace SIM7600 {
   X(EmptyLine)                     \
   X(GPSNotFixed)                   \
   X(InvalidAntennaVoltage)         \
+  X(InvalidAPN)                    \
   X(InvalidBuffer)                 \
   X(InvalidCallback)               \
   X(InvalidClientName)             \
