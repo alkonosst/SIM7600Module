@@ -23,8 +23,8 @@ const uint8_t GSM_UART_RX           = 41;
 const uint8_t GSM_UART_TX           = 42;
 const uint16_t GSM_UART_BUFFER_SIZE = 1024;
 const char* GSM_APN                 = "internet";
-const char* GSM_USER                = nullptr;
-const char* GSM_PASS                = nullptr;
+const char* GSM_USER                = "";
+const char* GSM_PASS                = "";
 
 // TCP configuration
 const char* TCP_SERVER        = "api.ipify.org";

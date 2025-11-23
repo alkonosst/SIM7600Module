@@ -813,17 +813,41 @@ bool Modem::isCurrentlyRegisteredOnNetwork() const { return (_registered_on_netw
 RegStatus Modem::getCurrentRegistrationStatus() const { return _current_reg_status; }
 
 Status Modem::configureAPN(const char* apn, const char* user, const char* password) {
+  if (apn == nullptr) {
+    SIM7600_LOGE(tag, "APN cannot be null");
+    return Status::InvalidAPN;
+  }
+
+  const char* user_str;
+  const char* pass_str;
+
+  if (user == nullptr) {
+    user_str = nullptr;
+  } else if (strlen(user) == 0) {
+    user_str = nullptr;
+  } else {
+    user_str = user;
+  }
+
+  if (password == nullptr) {
+    pass_str = nullptr;
+  } else if (strlen(password) == 0) {
+    pass_str = nullptr;
+  } else {
+    pass_str = password;
+  }
+
   SIM7600_LOGI(tag,
     "Configuring APN: %s, USER: %s, PASS: %s",
     apn,
-    user ? user : "-empty-",
-    password ? password : "-empty-");
+    (user_str != nullptr) ? user_str : "-empty-",
+    (pass_str != nullptr) ? pass_str : "-empty-");
 
   Status status;
 
   // Set authentication if needed
-  if (user != nullptr && password != nullptr) {
-    status = sendATCmd("AT+CGAUTH=1,1,\"%s\",\"%s\"", password, user);
+  if (user_str != nullptr && pass_str != nullptr) {
+    status = sendATCmd("AT+CGAUTH=1,1,\"%s\",\"%s\"", pass_str, user_str);
     if (status != Status::Success) return status;
 
     status = waitForResponse(AT_OK);

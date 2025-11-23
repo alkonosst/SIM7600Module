@@ -434,9 +434,9 @@ class Modem {
 
   /**
    * @brief Configure the APN settings for GPRS connection.
-   * @param apn Access Point Name.
-   * @param user Username for APN, if required.
-   * @param password Password for APN, if required.
+   * @param apn Access Point Name. Cannot be nullptr or an empty string.
+   * @param user Username for APN, if required. Can be nullptr or an empty string.
+   * @param password Password for APN, if required. Can be nullptr or an empty string.
    * @return Status::Success on success, error code otherwise.
    */
   Status configureAPN(const char* apn, const char* user = nullptr, const char* password = nullptr);
