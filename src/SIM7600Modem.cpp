@@ -13,8 +13,11 @@ namespace SIM7600 {
 
 Modem::Modem()
     : _serial(nullptr)
+    , _cb_network_changed(nullptr)
     , _cb_tcp_network_closed(nullptr)
     , _cb_mqtt_network_closed(nullptr)
+    , _registered_on_network(false)
+    , _current_reg_status(RegStatus::NotRegisteredAndNotSearching)
     , _urc_handler_count(0) {
   memset(_tx_buf, 0, SIM7600_MODEM_TX_BUFFER_SIZE_B);
   memset(_rx_buf, 0, SIM7600_MODEM_RX_BUFFER_SIZE_B);
@@ -23,8 +26,11 @@ Modem::Modem()
 
 Modem::Modem(Stream* serial)
     : _serial(serial)
+    , _cb_network_changed(nullptr)
     , _cb_tcp_network_closed(nullptr)
     , _cb_mqtt_network_closed(nullptr)
+    , _registered_on_network(false)
+    , _current_reg_status(RegStatus::NotRegisteredAndNotSearching)
     , _urc_handler_count(0) {
   memset(_tx_buf, 0, SIM7600_MODEM_TX_BUFFER_SIZE_B);
   memset(_rx_buf, 0, SIM7600_MODEM_RX_BUFFER_SIZE_B);
@@ -32,6 +38,12 @@ Modem::Modem(Stream* serial)
 }
 
 void Modem::setSerialPort(Stream* serial) { _serial = serial; }
+
+Status Modem::setNetworkChangedCallback(NetworkChangedCB callback) {
+  if (callback == nullptr) return Status::InvalidCallback;
+  _cb_network_changed = callback;
+  return Status::Success;
+}
 
 Status Modem::setTCPNetworkClosedCallback(TCPNetworkClosedCB callback) {
   if (callback == nullptr) return Status::InvalidCallback;
@@ -60,6 +72,11 @@ Status Modem::init(const char* pin, const uint32_t timeout_ms) {
   // Disable verbose errors
   SIM7600_LOGD(tag, "Disabling verbose errors");
   status = sendATCmdAndWaitResp("AT+CMEE=0", AT_OK);
+  if (status != Status::Success) return status;
+
+  // Enable CGREG URCs
+  SIM7600_LOGD(tag, "Enabling CGREG URCs");
+  status = sendATCmdAndWaitResp("AT+CGREG=1", AT_OK);
   if (status != Status::Success) return status;
 
   // TCPIP receive mode set to manual
@@ -323,7 +340,6 @@ Status Modem::parseLine(char* const buffer, const uint8_t parameters, const char
   va_end(args);
 
   if (parsed < parameters) {
-    SIM7600_LOGE(tag, "Parsed parameters less than expected: %d/%d", parsed, parameters);
     return Status::InvalidResponse;
   }
 
@@ -769,6 +785,11 @@ Status Modem::getNetworkRegistrationStatus(RegStatus& reg_status, const uint32_t
 
   reg_status = static_cast<RegStatus>(stat);
 
+  // Update internal state
+  _current_reg_status = reg_status;
+  _registered_on_network =
+    (reg_status == RegStatus::RegisteredHomeNetwork || reg_status == RegStatus::RegisteredRoaming);
+
   return waitForResponse(AT_OK);
 }
 
@@ -786,6 +807,10 @@ Status Modem::isRegisteredOnNetwork(bool& registered, const uint32_t timeout_ms)
 
   return Status::Success;
 }
+
+bool Modem::isCurrentlyRegisteredOnNetwork() const { return (_registered_on_network); }
+
+RegStatus Modem::getCurrentRegistrationStatus() const { return _current_reg_status; }
 
 Status Modem::configureAPN(const char* apn, const char* user, const char* password) {
   SIM7600_LOGI(tag,
@@ -1110,6 +1135,43 @@ bool Modem::_handleURCs() {
   }
 
   // Then, check modem-specific URCs
+
+  // Network changed
+  if (strncmp(_rx_buf, "+CGREG:", 7) == 0) {
+    uint8_t n;
+    uint8_t stat;
+    Status status = parseLine(_rx_buf, 2, "+CGREG: %hhu,%hhu", &n, &stat);
+
+    // If the <n> parameter is present, this is not a URC but a response to AT+CGREG?
+    // Exit without further processing
+    if (status == Status::Success) {
+      SIM7600_LOGD(tag, "CGREG response detected, not a URC");
+      return false;
+    }
+
+    status = parseLine(_rx_buf, 1, "+CGREG: %hhu", &stat);
+    if (status != Status::Success) {
+      SIM7600_LOGE(tag, "Failed to parse network registration URC");
+      return false;
+    }
+
+    RegStatus reg_status = static_cast<RegStatus>(stat);
+    bool registered      = (reg_status == RegStatus::RegisteredHomeNetwork ||
+                       reg_status == RegStatus::RegisteredRoaming);
+
+    SIM7600_LOGD(tag,
+      "URC: Network reg status changed: Registered: %s, status: %u",
+      registered ? "YES" : "NO",
+      static_cast<uint8_t>(reg_status));
+
+    // Update internal state
+    _current_reg_status    = reg_status;
+    _registered_on_network = registered;
+
+    if (_cb_network_changed != nullptr) _cb_network_changed(registered, reg_status);
+
+    return true;
+  }
 
   // Modem ready
   if (strcmp(_rx_buf, "RDY") == 0) {

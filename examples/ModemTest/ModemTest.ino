@@ -49,6 +49,13 @@ SIM7600::MQTTClient mqtt(&modem);
 void handleSerial();
 
 /* Callback functions definitions */
+// Modem
+void networkChangedCB(const bool registered, const SIM7600::RegStatus reg_status) {
+  Serial.printf("Event: Network changed! Registered: %s, Status: %u\r\n",
+    registered ? "Yes" : "No",
+    static_cast<uint8_t>(reg_status));
+}
+
 // TCP
 void tcpNetworkClosedCB() { Serial.println("Event: TCP network connection closed!"); }
 
@@ -124,6 +131,7 @@ void setup() {
   digitalWrite(GSM_GPIO_ENABLE, HIGH);
 
   // Modem callbacks
+  modem.setNetworkChangedCallback(networkChangedCB);
   modem.setTCPNetworkClosedCallback(tcpNetworkClosedCB);
   modem.setMQTTNetworkClosedCallback(mqttNetworkClosedCB);
 
@@ -228,6 +236,13 @@ void handleSerial() {
 
     case '4':
     {
+      Serial.printf("Currently registered on network: %s, Status: %u\r\n",
+        modem.isCurrentlyRegisteredOnNetwork() ? "Yes" : "No",
+        static_cast<uint8_t>(modem.getCurrentRegistrationStatus()));
+    } break;
+
+    case '5':
+    {
       SIM7600::NTPSyncStatus ntp_status;
       status = modem.setNTPServer(ntp_status, "pool.ntp.org", 0);
 
@@ -239,7 +254,7 @@ void handleSerial() {
       }
     } break;
 
-    case '5':
+    case '6':
     {
       SIM7600::NTPTimeData time_data;
 
@@ -259,7 +274,7 @@ void handleSerial() {
       }
     } break;
 
-    case '6':
+    case '7':
     {
       status = modem.setGPSAntennaVoltage(3050);
 
@@ -271,7 +286,7 @@ void handleSerial() {
       }
     } break;
 
-    case '7':
+    case '8':
     {
       uint16_t voltage_mv;
       status = modem.getGPSAntennaVoltage(voltage_mv);
@@ -284,7 +299,7 @@ void handleSerial() {
       }
     } break;
 
-    case '8':
+    case '9':
     {
       status = modem.enableGPSAntennaVoltage();
 
@@ -296,7 +311,7 @@ void handleSerial() {
       }
     } break;
 
-    case '9':
+    case '0':
     {
       status = modem.disableGPSAntennaVoltage();
 
@@ -308,7 +323,7 @@ void handleSerial() {
       }
     } break;
 
-    case '0':
+    case 'q':
     {
       bool enabled;
       status = modem.isGPSAntennaVoltageEnabled(enabled);
@@ -321,7 +336,7 @@ void handleSerial() {
       }
     } break;
 
-    case 'q':
+    case 'w':
     {
       status = modem.enableGPS();
 
@@ -332,7 +347,7 @@ void handleSerial() {
       }
     } break;
 
-    case 'w':
+    case 'e':
     {
       status = modem.disableGPS();
 
@@ -343,7 +358,7 @@ void handleSerial() {
       }
     } break;
 
-    case 'e':
+    case 'r':
     {
       bool enabled;
       status = modem.isGPSEnabled(enabled);
@@ -355,7 +370,7 @@ void handleSerial() {
       }
     } break;
 
-    case 'r':
+    case 't':
     {
       status = modem.enableGPSAutoStart(true);
 
@@ -366,7 +381,7 @@ void handleSerial() {
       }
     } break;
 
-    case 't':
+    case 'y':
     {
       status = modem.enableGPSAutoStart(false);
 
@@ -377,7 +392,7 @@ void handleSerial() {
       }
     } break;
 
-    case 'y':
+    case 'u':
     {
       bool enabled;
       status = modem.getGPSAutoStart(enabled);
@@ -390,7 +405,7 @@ void handleSerial() {
       }
     } break;
 
-    case 'u':
+    case 'i':
     {
       static SIM7600::GPSData gps_data;
       status = modem.getGPSData(gps_data);
@@ -427,7 +442,7 @@ void handleSerial() {
     } break;
 
     // TCP Client tests
-    case 'i':
+    case 'o':
     {
       status = modem.startTCPIPService();
 
@@ -438,7 +453,7 @@ void handleSerial() {
       }
     } break;
 
-    case 'o':
+    case 'p':
     {
       status = modem.stopTCPIPService();
 
@@ -449,7 +464,7 @@ void handleSerial() {
       }
     } break;
 
-    case 'p':
+    case 'a':
     {
       status = tcp.connectToHost(TCP_SERVER, TCP_PORT);
 
@@ -460,7 +475,7 @@ void handleSerial() {
       }
     } break;
 
-    case 'a':
+    case 's':
     {
       status = tcp.disconnect();
 
@@ -471,7 +486,7 @@ void handleSerial() {
       }
     } break;
 
-    case 's':
+    case 'd':
     {
       bool connected;
       status = tcp.isConnected(connected);
@@ -483,7 +498,7 @@ void handleSerial() {
       }
     } break;
 
-    case 'd':
+    case 'f':
     {
       // Don't send the null terminator
       static const size_t request_size = sizeof(TCP_HTTP_GET_REQ) - 1;
@@ -500,7 +515,7 @@ void handleSerial() {
       }
     } break;
 
-    case 'f':
+    case 'g':
     {
       size_t available = 0;
       status           = tcp.getAvailableBytes(available);
@@ -513,7 +528,7 @@ void handleSerial() {
       }
     } break;
 
-    case 'g':
+    case 'h':
     {
       static char rx_buffer[512];
       size_t bytes_read = 0;
@@ -540,7 +555,7 @@ void handleSerial() {
     } break;
 
     // MQTT Client tests
-    case 'h':
+    case 'j':
     {
       status = modem.startMQTTService();
 
@@ -551,7 +566,7 @@ void handleSerial() {
       }
     } break;
 
-    case 'j':
+    case 'k':
     {
       status = modem.stopMQTTService();
 
@@ -562,7 +577,7 @@ void handleSerial() {
       }
     } break;
 
-    case 'k':
+    case 'l':
     {
       status = mqtt.acquireClient("sim7600", false, SIM7600::MQTTVersion::V3_1_1);
 
@@ -573,7 +588,7 @@ void handleSerial() {
       }
     } break;
 
-    case 'l':
+    case 'z':
     {
       status = mqtt.releaseClient();
 
@@ -584,7 +599,7 @@ void handleSerial() {
       }
     } break;
 
-    case 'z':
+    case 'x':
     {
       status =
         mqtt.setLastWillMessage(MQTT_WILL_TOPIC, MQTT_WILL_MESSAGE, SIM7600::MQTTQoS::AtLeastOnce);
@@ -596,7 +611,7 @@ void handleSerial() {
       }
     } break;
 
-    case 'x':
+    case 'c':
     {
       status = mqtt.connect(MQTT_SERVER);
 
@@ -607,7 +622,7 @@ void handleSerial() {
       }
     } break;
 
-    case 'c':
+    case 'v':
     {
       status = mqtt.disconnect();
 
@@ -618,7 +633,7 @@ void handleSerial() {
       }
     } break;
 
-    case 'v':
+    case 'b':
     {
       bool connected;
       status = mqtt.isConnected(connected);
@@ -630,7 +645,7 @@ void handleSerial() {
       }
     } break;
 
-    case 'b':
+    case 'n':
     {
       status = mqtt.subscribe(MQTT_TOPIC, SIM7600::MQTTQoS::AtLeastOnce);
 
@@ -642,7 +657,7 @@ void handleSerial() {
       }
     } break;
 
-    case 'n':
+    case 'm':
     {
       status = mqtt.unsubscribe(MQTT_TOPIC);
 
@@ -655,7 +670,7 @@ void handleSerial() {
       }
     } break;
 
-    case 'm':
+    case ',':
     {
       static char mqtt_payload[16];
 
