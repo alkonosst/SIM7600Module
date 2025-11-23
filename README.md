@@ -504,9 +504,15 @@ Modem modem(&Serial1); // Use Serial1 for communication
 void setup() {
   // ... Initialize modem as shown in the previous example
 
-  // Synchronize time with NTP server
+  // Set NTP server, UTC time zone = 0
+  Status status = modem.setNTPServer("pool.ntp.org", 0);
+  if (status != Status::Success) {
+    // Handle error
+  }
+
+  // Synchronize time
   NTPSyncStatus ntp_status;
-  Status status = modem.setNTPServer(ntp_status, "pool.ntp.org");
+  status = modem.synchronizeTime(ntp_status);
   if (status != Status::Success) {
     // Handle error
   }
