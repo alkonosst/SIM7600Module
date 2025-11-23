@@ -104,9 +104,11 @@ class Modem {
   public:
   // Callback function types. Use std::function if available.
 #if SIM7600_HAS_STD_FUNCTION
+  using NetworkChangedCB    = std::function<void(const bool registered, const RegStatus status)>;
   using TCPNetworkClosedCB  = std::function<void()>;
   using MQTTNetworkClosedCB = std::function<void()>;
 #else
+  using NetworkChangedCB    = void (*)(const bool registered, const RegStatus status);
   using TCPNetworkClosedCB  = void (*)();
   using MQTTNetworkClosedCB = void (*)();
 #endif
@@ -128,6 +130,13 @@ class Modem {
    * @param serial Serial port.
    */
   void setSerialPort(Stream* serial);
+
+  /**
+   * @brief Set the network changed callback.
+   * @param callback Callback function to be called when the network registration status changes.
+   * @return Status::Success on success, error code otherwise.
+   */
+  Status setNetworkChangedCallback(NetworkChangedCB callback);
 
   /**
    * @brief Set the TCP network closed callback.
@@ -409,6 +418,21 @@ class Modem {
     const uint32_t timeout_ms = SIM7600_MODEM_DEFAULT_TIMEOUT_MS);
 
   /**
+   * @brief Check if the modem is currently registered on the network. This method returns the last
+   * known registration status without querying the modem. It is updated when receiving the +CGREG
+   * URC and when querying the registration status.
+   * @return true if registered on the network, false otherwise.
+   */
+  bool isCurrentlyRegisteredOnNetwork() const;
+
+  /**
+   * @brief Get the last known registration status without querying the modem. It is updated when
+   * receiving the +CGREG URC and when querying the registration status.
+   * @return RegStatus Registration status.
+   */
+  RegStatus getCurrentRegistrationStatus() const;
+
+  /**
    * @brief Configure the APN settings for GPRS connection.
    * @param apn Access Point Name.
    * @param user Username for APN, if required.
@@ -483,8 +507,11 @@ class Modem {
 
   private:
   Stream* _serial;
+  NetworkChangedCB _cb_network_changed;
   TCPNetworkClosedCB _cb_tcp_network_closed;
   MQTTNetworkClosedCB _cb_mqtt_network_closed;
+  bool _registered_on_network;
+  RegStatus _current_reg_status;
 
   char _tx_buf[SIM7600_MODEM_TX_BUFFER_SIZE_B];
   char _rx_buf[SIM7600_MODEM_RX_BUFFER_SIZE_B];

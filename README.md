@@ -44,15 +44,15 @@
     - [Network management](#network-management)
     - [NTP time synchronization](#ntp-time-synchronization)
     - [Start/stop services](#startstop-services)
-    - [Services callbacks](#services-callbacks)
+    - [Callbacks](#callbacks)
   - [TCPClient features](#tcpclient-features)
     - [Connecting to a TCP server](#connecting-to-a-tcp-server)
     - [Transferring data](#transferring-data)
-    - [Callbacks](#callbacks)
+    - [Callbacks](#callbacks-1)
   - [MQTTClient features](#mqttclient-features)
     - [Connecting to an MQTT broker](#connecting-to-an-mqtt-broker)
     - [Publishing and subscribing to topics](#publishing-and-subscribing-to-topics)
-    - [Callbacks](#callbacks-1)
+    - [Callbacks](#callbacks-2)
 - [Troubleshooting](#troubleshooting)
   - [Module doesn't respond](#module-doesnt-respond)
   - [Can't register on network](#cant-register-on-network)
@@ -486,6 +486,11 @@ void setup() {
   } else {
     Serial.println("Modem is not registered on the network.");
   }
+
+  // Get last known registration status without querying the modem
+  Serial.printf("Currently registered on network: %s, Status: %u\r\n",
+        modem.isCurrentlyRegisteredOnNetwork() ? "Yes" : "No",
+        static_cast<uint8_t>(modem.getCurrentRegistrationStatus()));
 }
 ```
 
@@ -555,7 +560,7 @@ void setup() {
 }
 ```
 
-### Services callbacks
+### Callbacks
 
 The `SIM7600::Modem` class allows you to set callbacks for various services events, such as TCP/IP
 and MQTT. You need to define your callback functions with the appropriate signatures and then set them using the
@@ -569,6 +574,13 @@ and MQTT. You need to define your callback functions with the appropriate signat
 using namespace SIM7600;
 Modem modem(&Serial1); // Use Serial1 for communication
 
+// Network changed event callback
+void networkChangedCB(const bool registered, const RegStatus reg_status) {
+  Serial.printf("Event: Network changed! Registered: %s, Status: %u\r\n",
+    registered ? "Yes" : "No",
+    static_cast<uint8_t>(reg_status));
+}
+
 // TCP/IP closed event callback
 // IMPORTANT: If this event occurs, you need to start the TCP/IP service again before using it.
 void tcpNetworkClosedCB() { Serial.println("Event: TCP network connection closed!"); }
@@ -579,6 +591,9 @@ void mqttNetworkClosedCB() { Serial.println("Event: MQTT network connection clos
 
 void setup() {
   // ... Initialize modem as shown in the previous example
+
+  // Set network changed event callback
+  modem.setNetworkChangedCallback(networkChangedCB);
 
   // Set TCP/IP closed event callback
   modem.setTCPNetworkClosedCallback(tcpNetworkClosedCB);
