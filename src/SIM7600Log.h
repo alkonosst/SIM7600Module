@@ -24,6 +24,11 @@
 #define SIM7600_LOG_STREAM Serial
 #endif
 
+// Enable verbose error codes, only printed when log level is ERROR or higher
+#ifndef SIM7600_LOG_VERBOSE_ERROR_CODES
+#define SIM7600_LOG_VERBOSE_ERROR_CODES 0
+#endif
+
 // Log buffer size
 #ifndef SIM7600_LOG_BUFFER_SIZE_B
 #define SIM7600_LOG_BUFFER_SIZE_B 256

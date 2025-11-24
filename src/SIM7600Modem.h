@@ -542,6 +542,7 @@ class Modem {
   Status _waitPromptAndSendData(const uint8_t* data, const size_t data_length, size_t& bytes_sent,
     const uint32_t timeout_ms = SIM7600_MODEM_DEFAULT_TIMEOUT_MS);
   Status _waitAsyncMQTTResponse(const char* mqtt_response_prefix, uint8_t& err_code);
+  bool _receivedErrorResponse();
 
   bool _handleURCs();
 

@@ -77,10 +77,17 @@ Status Modem::init(const char* pin, const uint32_t timeout_ms) {
   status = sendATCmdAndWaitResp("ATE0", AT_OK);
   if (status != Status::Success) return status;
 
+#if SIM7600_LOG_VERBOSE_ERROR_CODES
+  // Enable verbose errors
+  SIM7600_LOGD(tag, "Enabling verbose errors");
+  status = sendATCmdAndWaitResp("AT+CMEE=2", AT_OK);
+  if (status != Status::Success) return status;
+#else
   // Disable verbose errors
   SIM7600_LOGD(tag, "Disabling verbose errors");
   status = sendATCmdAndWaitResp("AT+CMEE=0", AT_OK);
   if (status != Status::Success) return status;
+#endif
 
   // Enable CGREG URCs
   SIM7600_LOGD(tag, "Enabling CGREG URCs");
@@ -201,11 +208,8 @@ Status Modem::waitForResponse(const char* expected_response, const uint32_t time
       return Status::Success;
     }
 
-    // Error response
-    if (strcmp(_rx_buf, AT_ERROR) == 0) {
-      SIM7600_LOGW(tag, "Received AT error response");
-      return Status::Error;
-    }
+    // Check for error response
+    if (_receivedErrorResponse()) return Status::Error;
   }
 
   SIM7600_LOGE(tag, "Timed out expecting response");
@@ -235,11 +239,8 @@ Status Modem::waitForResponses(const char** expected_responses, const uint8_t re
       }
     }
 
-    // Error response
-    if (strcmp(_rx_buf, AT_ERROR) == 0) {
-      SIM7600_LOGW(tag, "Received AT error response");
-      return Status::Error;
-    }
+    // Check for error response
+    if (_receivedErrorResponse()) return Status::Error;
   }
 
   SIM7600_LOGE(tag, "Timed out expecting %u responses", response_count);
@@ -1195,6 +1196,24 @@ Status Modem::_waitAsyncMQTTResponse(const char* mqtt_response_prefix, uint8_t& 
   }
 
   return Status::Success;
+}
+
+bool Modem::_receivedErrorResponse() {
+#if SIM7600_LOG_VERBOSE_ERROR_CODES
+  // Verbose error response
+  if ((strncmp(_rx_buf, "+CME ERROR:", 11) == 0) || (strncmp(_rx_buf, "+CMS ERROR:", 11) == 0)) {
+    SIM7600_LOGE(tag, "<< [Verbose Error]: %s", _rx_buf);
+    return true;
+  }
+#endif
+
+  // Error response
+  if (strcmp(_rx_buf, AT_ERROR) == 0) {
+    SIM7600_LOGW(tag, "Received AT error response");
+    return true;
+  }
+
+  return false;
 }
 
 bool Modem::_handleURCs() {
