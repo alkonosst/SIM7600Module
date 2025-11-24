@@ -461,7 +461,7 @@ void handleSerial() {
           "%02u:%02u:%02u\r\n-> Speed: %.2f, Course: %.2f, Altitude: %.2f\r\n-> GPS: %u, GLONASS: "
           "%u, BeiDou: "
           "%u\r\n-> PDOP: %.2f, HDOP: %.2f, VDOP: %.2f\r\n",
-          gps_data.fix_status,
+          static_cast<uint8_t>(gps_data.fix_status),
           gps_data.latitude,
           gps_data.longitude,
           gps_data.day,
@@ -718,7 +718,7 @@ void handleSerial() {
     {
       static char mqtt_payload[16];
 
-      uint32_t rand = random(0, 100);
+      uint8_t rand = random(0, 100);
       snprintf(mqtt_payload, sizeof(mqtt_payload), "%u", rand);
 
       status = mqtt.publish(MQTT_TOPIC,
