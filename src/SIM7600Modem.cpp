@@ -13,6 +13,7 @@ namespace SIM7600 {
 
 Modem::Modem()
     : _serial(nullptr)
+    , _cb_modem_ready(nullptr)
     , _cb_network_changed(nullptr)
     , _cb_tcp_network_closed(nullptr)
     , _cb_mqtt_network_closed(nullptr)
@@ -26,6 +27,7 @@ Modem::Modem()
 
 Modem::Modem(Stream* serial)
     : _serial(serial)
+    , _cb_modem_ready(nullptr)
     , _cb_network_changed(nullptr)
     , _cb_tcp_network_closed(nullptr)
     , _cb_mqtt_network_closed(nullptr)
@@ -38,6 +40,12 @@ Modem::Modem(Stream* serial)
 }
 
 void Modem::setSerialPort(Stream* serial) { _serial = serial; }
+
+Status Modem::setModemReadyCallback(ModemReadyCB callback) {
+  if (callback == nullptr) return Status::InvalidCallback;
+  _cb_modem_ready = callback;
+  return Status::Success;
+}
 
 Status Modem::setNetworkChangedCallback(NetworkChangedCB callback) {
   if (callback == nullptr) return Status::InvalidCallback;
@@ -122,6 +130,20 @@ Status Modem::init(const char* pin, const uint32_t timeout_ms) {
 
   SIM7600_LOGI(tag, "Modem initialized successfully");
   return Status::Success;
+}
+
+Status Modem::powerOff() {
+  SIM7600_LOGI(tag, "Powering off SIM7600 modem");
+
+  // Send power off command
+  return sendATCmdAndWaitResp("AT+CPOF", AT_OK);
+}
+
+Status Modem::reset() {
+  SIM7600_LOGI(tag, "Resetting SIM7600 modem");
+
+  // Send reset command
+  return sendATCmdAndWaitResp("AT+CRESET", AT_OK);
 }
 
 Status Modem::sendATCmd(const char* cmd_format, ...) {
@@ -1228,6 +1250,9 @@ bool Modem::_handleURCs() {
   // Modem ready
   if (strcmp(_rx_buf, "RDY") == 0) {
     SIM7600_LOGD(tag, "URC: Modem is ready");
+
+    if (_cb_modem_ready != nullptr) _cb_modem_ready();
+
     return true;
   }
 
