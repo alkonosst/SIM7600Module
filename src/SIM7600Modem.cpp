@@ -164,7 +164,12 @@ Status Modem::waitForResponse(const char* expected_response, const uint32_t time
   uint32_t start = millis();
 
   while ((millis() - start) < timeout_ms) {
-    Status status = readLine(_rx_buf, SIM7600_MODEM_RX_BUFFER_SIZE_B, timeout_ms);
+    uint32_t elapsed = millis() - start;
+    if (elapsed >= timeout_ms) break;
+
+    uint32_t remaining_time_ms = timeout_ms - elapsed;
+
+    Status status = readLine(_rx_buf, SIM7600_MODEM_RX_BUFFER_SIZE_B, remaining_time_ms);
 
     if (status == Status::EmptyLine) continue;
     if (status != Status::Success) return status;
@@ -190,7 +195,12 @@ Status Modem::waitForResponses(const char** expected_responses, const uint8_t re
   uint32_t start = millis();
 
   while ((millis() - start) < timeout_ms) {
-    Status status = readLine(_rx_buf, SIM7600_MODEM_RX_BUFFER_SIZE_B, timeout_ms);
+    uint32_t elapsed = millis() - start;
+    if (elapsed >= timeout_ms) break;
+
+    uint32_t remaining_time_ms = timeout_ms - elapsed;
+
+    Status status = readLine(_rx_buf, SIM7600_MODEM_RX_BUFFER_SIZE_B, remaining_time_ms);
 
     if (status == Status::EmptyLine) continue;
     if (status != Status::Success) return status;
@@ -218,12 +228,17 @@ Status Modem::waitForPrompt(const uint32_t timeout_ms) {
   uint32_t start = millis();
 
   while ((millis() - start) < timeout_ms) {
+    uint32_t elapsed = millis() - start;
+    if (elapsed >= timeout_ms) break;
+
+    uint32_t remaining_time_ms = timeout_ms - elapsed;
+
     size_t bytes_read = 0;
     Status status     = readBytes(reinterpret_cast<uint8_t*>(_rx_buf),
       SIM7600_MODEM_RX_BUFFER_SIZE_B,
       1,
       bytes_read,
-      timeout_ms);
+      remaining_time_ms);
 
     if (status != Status::Success) return status;
 
