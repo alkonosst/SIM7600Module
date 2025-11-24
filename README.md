@@ -287,6 +287,16 @@ If you are using an `ESP32` platform, you can enable the native `ESP_LOGX()` log
 #include "SIM7600Modem.h"
 ```
 
+If you need verbose error codes (`+CME ERROR:` and `+CMS ERROR:`), you can define the
+`SIM7600_LOG_VERBOSE_ERROR_CODES` macro. You need to set the log level to `1` (ERROR) or higher:
+
+```cpp
+// Enable verbose error codes
+#define SIM7600_LOG_VERBOSE_ERROR_CODES
+#define SIM7600_LOG_LEVEL 3
+#include "SIM7600Modem.h"
+```
+
 If you need a custom log function, you can define the `SIM7600_LOG_CUSTOM` to a custom function with the
 following signature:
 
@@ -317,6 +327,7 @@ build_flags =
   -DSIM7600_LOG_BUFFER_SIZE_B=512
   -DSIM7600_USE_ESP32_LOGS
   -DSIM7600_LOG_CUSTOM=logFunction
+  -DSIM7600_LOG_VERBOSE_ERROR_CODES
 ```
 
 ## Modem features
