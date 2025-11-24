@@ -686,9 +686,9 @@ Status Modem::getGPSData(GPSData& gps_data) {
     switch (index) {
       case 0:
       {
-        GPSFixStatus fix_mode;
+        uint8_t fix_mode_value;
 
-        if (sscanf(token, "%u", &fix_mode) != 1) {
+        if (sscanf(token, "%hhu", &fix_mode_value) != 1) {
           SIM7600_LOGE(tag, "Failed to parse GPS fix mode");
 
           // Wait for OK
@@ -698,20 +698,22 @@ Status Modem::getGPSData(GPSData& gps_data) {
           return Status::InvalidResponse;
         }
 
-        gps_data.fix_status = fix_mode;
+        gps_data.fix_status = static_cast<GPSFixStatus>(fix_mode_value);
       } break;
 
-      case 1: sscanf(token, "%u", &gps_data.gps_satellites); break;
-      case 2: sscanf(token, "%u", &gps_data.glonass_satellites); break;
-      case 3: sscanf(token, "%u", &gps_data.beidou_satellites); break;
+      case 1: sscanf(token, "%hhu", &gps_data.gps_satellites); break;
+      case 2: sscanf(token, "%hhu", &gps_data.glonass_satellites); break;
+      case 3: sscanf(token, "%hhu", &gps_data.beidou_satellites); break;
       case 4: sscanf(token, "%lf", &gps_data.latitude); break;
       case 5: n_s = token[0]; break;
       case 6: sscanf(token, "%lf", &gps_data.longitude); break;
       case 7: e_w = token[0]; break;
       case 8:
-        sscanf(token, "%2hhu%2hhu%2hhu", &gps_data.day, &gps_data.month, &gps_data.year);
-        gps_data.year += 2000;
-        break;
+      {
+        uint8_t year_value;
+        sscanf(token, "%2hhu%2hhu%2hhu", &gps_data.day, &gps_data.month, &year_value);
+        gps_data.year = year_value + 2000;
+      } break;
       case 9:
       {
         float sec;

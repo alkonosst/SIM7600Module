@@ -332,7 +332,6 @@ Status MQTTClient::disconnect(const uint8_t timeout_s) {
   // others=failure
   uint8_t client_id;
   uint8_t err;
-  uint8_t parsed;
 
   if (got_mqtt_first) {
     status = _modem->parseLine(_rx_buf, 2, "+CMQTTDISC: %hhu,%hhu", &client_id, &err);
