@@ -50,6 +50,8 @@ void handleSerial();
 
 /* Callback functions definitions */
 // Modem
+void modemReadyCB() { Serial.println("Event: Modem is ready!"); }
+
 void networkChangedCB(const bool registered, const SIM7600::RegStatus reg_status) {
   Serial.printf("Event: Network changed! Registered: %s, Status: %u\r\n",
     registered ? "Yes" : "No",
@@ -131,6 +133,7 @@ void setup() {
   digitalWrite(GSM_GPIO_ENABLE, HIGH);
 
   // Modem callbacks
+  modem.setModemReadyCallback(modemReadyCB);
   modem.setNetworkChangedCallback(networkChangedCB);
   modem.setTCPNetworkClosedCallback(tcpNetworkClosedCB);
   modem.setMQTTNetworkClosedCallback(mqttNetworkClosedCB);
@@ -187,10 +190,44 @@ void handleSerial() {
   SIM7600::Status status;
 
   switch (c) {
+    // ESP32 and modem control
     case '|':
     {
       Serial.println("Restarting ESP32...");
       ESP.restart();
+    } break;
+
+    case '/':
+    {
+      status = modem.init();
+
+      if (status == SIM7600::Status::Success) {
+        Serial.println("Modem initialized successfully!");
+      } else {
+        Serial.printf("Modem initialization failed: %s\r\n", SIM7600::statusToString(status));
+      }
+    } break;
+
+    case '*':
+    {
+      status = modem.reset();
+
+      if (status == SIM7600::Status::Success) {
+        Serial.println("Modem reset successfully");
+      } else {
+        Serial.printf("Modem reset failed: %s\r\n", SIM7600::statusToString(status));
+      }
+    } break;
+
+    case '-':
+    {
+      status = modem.powerOff();
+
+      if (status == SIM7600::Status::Success) {
+        Serial.println("Modem powered off successfully");
+      } else {
+        Serial.printf("Modem power off failed: %s\r\n", SIM7600::statusToString(status));
+      }
     } break;
 
     // Modem tests

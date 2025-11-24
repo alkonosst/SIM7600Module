@@ -40,6 +40,7 @@
       - [Enabling debug output](#enabling-debug-output)
   - [Modem features](#modem-features)
     - [Initialization and status](#initialization-and-status)
+    - [Power management](#power-management)
     - [GPS management](#gps-management)
     - [Network management](#network-management)
     - [NTP time synchronization](#ntp-time-synchronization)
@@ -406,6 +407,33 @@ void loop() {
 }
 ```
 
+### Power management
+
+```cpp
+#include "SIM7600Modem.h"
+using namespace SIM7600;
+Modem modem(&Serial1); // Use Serial1 for communication
+
+void setup() {
+  // ... Initialize modem as shown in the previous example
+
+  // Reset the modem (requires re-initialization after power on)
+  Status status = modem.reset();
+  if (status != Status::Success) {
+    // Handle error
+  }
+
+  // Power off the modem (requires re-initialization after power on)
+  status = modem.powerOff();
+  if (status != Status::Success) {
+    // Handle error
+  }
+
+  // If you have a SIM7600 with power control pin, turn it off as well
+  digitalWrite(7, LOW);
+}
+```
+
 ### GPS management
 
 ```cpp
@@ -580,6 +608,9 @@ and MQTT. You need to define your callback functions with the appropriate signat
 using namespace SIM7600;
 Modem modem(&Serial1); // Use Serial1 for communication
 
+// Modem ready event callback
+void modemReadyCB() { Serial.println("Event: Modem is ready!"); }
+
 // Network changed event callback
 void networkChangedCB(const bool registered, const RegStatus reg_status) {
   Serial.printf("Event: Network changed! Registered: %s, Status: %u\r\n",
@@ -597,6 +628,9 @@ void mqttNetworkClosedCB() { Serial.println("Event: MQTT network connection clos
 
 void setup() {
   // ... Initialize modem as shown in the previous example
+
+  // Set modem ready event callback
+  modem.setModemReadyCallback(modemReadyCB);
 
   // Set network changed event callback
   modem.setNetworkChangedCallback(networkChangedCB);

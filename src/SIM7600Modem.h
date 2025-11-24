@@ -104,10 +104,12 @@ class Modem {
   public:
   // Callback function types. Use std::function if available.
 #if SIM7600_HAS_STD_FUNCTION
+  using ModemReadyCB        = std::function<void()>;
   using NetworkChangedCB    = std::function<void(const bool registered, const RegStatus status)>;
   using TCPNetworkClosedCB  = std::function<void()>;
   using MQTTNetworkClosedCB = std::function<void()>;
 #else
+  using ModemReadyCB        = void (*)();
   using NetworkChangedCB    = void (*)(const bool registered, const RegStatus status);
   using TCPNetworkClosedCB  = void (*)();
   using MQTTNetworkClosedCB = void (*)();
@@ -130,6 +132,13 @@ class Modem {
    * @param serial Serial port.
    */
   void setSerialPort(Stream* serial);
+
+  /**
+   * @brief Set the modem ready callback.
+   * @param callback Callback function when the modem delivers ready status ("RDY" URC).
+   * @return Status::Success on success, error code otherwise.
+   */
+  Status setModemReadyCallback(ModemReadyCB callback);
 
   /**
    * @brief Set the network changed callback.
@@ -162,6 +171,20 @@ class Modem {
    */
   Status init(const char* pin = nullptr,
     uint32_t timeout_ms       = SIM7600_MODEM_DEFAULT_INIT_TIMEOUT_MS);
+
+  /**
+   * @brief Reset the modem. The modem losses its configuration and needs to be re-initialized
+   * with init() in the next power on.
+   * @return Status::Success on success, error code otherwise.
+   */
+  Status reset();
+
+  /**
+   * @brief Power off the modem. The modem losses its configuration and needs to be re-initialized
+   * with init() in the next power on.
+   * @return Status::Success on success, error code otherwise.
+   */
+  Status powerOff();
 
   /**
    * @brief Send an AT command to the modem.
@@ -505,6 +528,7 @@ class Modem {
 
   private:
   Stream* _serial;
+  ModemReadyCB _cb_modem_ready;
   NetworkChangedCB _cb_network_changed;
   TCPNetworkClosedCB _cb_tcp_network_closed;
   MQTTNetworkClosedCB _cb_mqtt_network_closed;
